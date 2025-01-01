@@ -106,7 +106,7 @@ paired_t_test_results <- datasets %>%
   summarise(
     T_Value = t.test(Custom_Accuracy, Sklearn_Accuracy, paired = TRUE)$statistic,
     P_Value = t.test(Custom_Accuracy, Sklearn_Accuracy, paired = TRUE)$p.value,
-    Effect_Size = effectsize::cohens_d(Custom_Accuracy, Sklearn_Accuracy, paired = TRUE)$Cohen_d,
+    Effect_Size = effectsize::repeated_measures_d(Custom_Accuracy, Sklearn_Accuracy)$Cohen_d,
     .groups = "drop"
   )
 kable(paired_t_test_results, caption = "Paired T-Test Results for Accuracy")
@@ -144,8 +144,10 @@ ggplot(datasets, aes(x = Custom_Training_Time, y = Sklearn_Training_Time, color 
        x = "Custom Training Time", y = "Sklearn Training Time")
 
 # Pairplot for Numeric Variables
-numeric_columns <- datasets %>% select_if(is.numeric)
+numeric_columns <- datasets %>% select(Custom_Accuracy, Sklearn_Accuracy, Train_Size, Max_Depth)
 ggpairs(numeric_columns, aes(color = datasets$Dataset))
+
+
 
 # Predicted vs Observed Plot
 ggplot(data.frame(Observed = datasets$Custom_Accuracy, Predicted = predict(combined_linear_model)), 
@@ -163,7 +165,8 @@ ggplot(datasets, aes(x = Dataset, y = Custom_Accuracy, fill = Dataset)) +
   labs(title = "Violin Plot of Custom Accuracy by Dataset", x = "Dataset", y = "Custom Accuracy")
 
 # Correlation Heatmap
-correlation_matrix <- datasets %>% select_if(is.numeric) %>% cor(use = "complete.obs")
+selected_columns <- datasets %>% select(Custom_Accuracy, Sklearn_Accuracy, Train_Size, Max_Depth, Min_Samples_Split, Min_Samples_Leaf)
+correlation_matrix <- cor(selected_columns, use = "complete.obs")
 ggcorrplot(
   correlation_matrix, 
   method = "circle", 
