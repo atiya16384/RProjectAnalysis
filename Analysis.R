@@ -75,17 +75,8 @@ kable(combined_summary_stats, caption = "Combined Summary Statistics of Accuracy
 combined_linear_model <- lm(Custom_Accuracy ~ Train_Size + Max_Depth + Min_Samples_Split + Min_Samples_Leaf, data = datasets)
 combined_linear_model_summary <- broom::tidy(combined_linear_model)
 kable(combined_linear_model_summary, caption = "Combined Linear Regression Summary")
-
-# Bootstrapping for Combined Mean Accuracy
-bootstrap_mean <- function(data, indices) {
-  d <- data[indices, ]
-  return(mean(d$Custom_Accuracy, na.rm = TRUE))
-}
-combined_bootstrap_results <- boot(data = datasets, statistic = bootstrap_mean, R = 1000)
-print(combined_bootstrap_results)
-plot(combined_bootstrap_results)
-
-# Generalized Additive Models (GAMs) for Combined Data
+R
+# ---------------------- Generalized Additive Models (GAMs) ---------------------- #
 k_value <- 4
 combined_gam_model <- gam(
   Custom_Accuracy ~ 
@@ -100,7 +91,8 @@ cat("Combined GAM Model Summary:\n")
 print(combined_gam_summary)
 plot(combined_gam_model, pages = 1)
 
-# Advanced Statistical Analysis: Paired t-tests and ANOVA
+# ---------------------- Advanced Statistical Analysis ---------------------- #
+# Paired t-tests and ANOVA
 paired_t_test_results <- datasets %>%
   group_by(Dataset) %>%
   summarise(
@@ -146,8 +138,6 @@ ggplot(datasets, aes(x = Custom_Training_Time, y = Sklearn_Training_Time, color 
 # Pairplot for Numeric Variables
 numeric_columns <- datasets %>% select(Custom_Accuracy, Sklearn_Accuracy, Train_Size, Max_Depth)
 ggpairs(numeric_columns, aes(color = datasets$Dataset))
-
-
 
 # Predicted vs Observed Plot
 ggplot(data.frame(Observed = datasets$Custom_Accuracy, Predicted = predict(combined_linear_model)), 
