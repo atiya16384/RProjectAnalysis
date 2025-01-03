@@ -75,7 +75,56 @@ kable(combined_summary_stats, caption = "Combined Summary Statistics of Accuracy
 combined_linear_model <- lm(Custom_Accuracy ~ Train_Size + Max_Depth + Min_Samples_Split + Min_Samples_Leaf, data = datasets)
 combined_linear_model_summary <- broom::tidy(combined_linear_model)
 kable(combined_linear_model_summary, caption = "Combined Linear Regression Summary")
-R
+
+# ---------------------- Bootstrapping for Accuracy ---------------------- #
+# Define the bootstrap function for mean accuracy
+bootstrap_mean <- function(data, indices) {
+  d <- data[indices, ]
+  return(mean(d$Custom_Accuracy, na.rm = TRUE))
+}
+
+# Perform bootstrapping with 1000 resamples
+combined_bootstrap_results <- boot(data = datasets, statistic = bootstrap_mean, R = 1000)
+
+# Print bootstrap summary statistics
+print(combined_bootstrap_results)
+
+# Calculate confidence intervals for bootstrapped mean accuracy
+combined_bootstrap_ci <- boot.ci(combined_bootstrap_results, type = c("basic", "perc", "bca"))
+print(combined_bootstrap_ci)
+
+# Plot histogram and Q-Q plot for bootstrapped results
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))  # Adjust layout and margins
+
+# Histogram of bootstrapped means
+hist(
+  combined_bootstrap_results$t, 
+  main = "Histogram of Bootstrapped Means", 
+  xlab = "Bootstrapped Means", 
+  col = "lightblue", 
+  border = "black"
+)
+
+# Q-Q Plot for bootstrapped means
+qqnorm(combined_bootstrap_results$t, main = "Q-Q Plot of Bootstrapped Means")
+qqline(combined_bootstrap_results$t, col = "red", lwd = 2)
+
+# Generate a summary table for bootstrap statistics
+bootstrap_summary <- data.frame(
+  Mean = combined_bootstrap_results$t0,
+  Bias = combined_bootstrap_results$t0 - mean(combined_bootstrap_results$t),
+  StdError = sd(combined_bootstrap_results$t),
+  CI_Lower_Basic = combined_bootstrap_ci$basic[4],
+  CI_Upper_Basic = combined_bootstrap_ci$basic[5],
+  CI_Lower_Perc = combined_bootstrap_ci$perc[4],
+  CI_Upper_Perc = combined_bootstrap_ci$perc[5],
+  CI_Lower_BCA = combined_bootstrap_ci$bca[4],
+  CI_Upper_BCA = combined_bootstrap_ci$bca[5]
+)
+
+# Print the bootstrap summary table
+print(bootstrap_summary)
+
 # ---------------------- Generalized Additive Models (GAMs) ---------------------- #
 k_value <- 4
 combined_gam_model <- gam(
@@ -164,5 +213,4 @@ ggcorrplot(
   lab = TRUE, 
   title = "Heatmap of Feature Correlations"
 )
-
 

@@ -4,7 +4,6 @@ author: '36850162'
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
-  html_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.align = "center", echo = TRUE)
@@ -53,17 +52,17 @@ By combining a custom implementation, rigorous benchmarking, and statistical ana
 
 The Python code produced multiple CSV files, each containing performance metrics and computational statistics for the custom Decision Tree implementation and Scikit-learn's implementation. These files are named according to the datasets used: iris_results.csv, heart_disease_results.csv, and wine_quality_results.csv. Each file contains detailed columns such as:
 
-- Hyperparameters: Train Size, Max Depth, Min Samples Split, and Min Gain, which define the configuration of the Decision Tree.
-- Performance Metrics: Custom Accuracy, Custom Precision, Custom Recall, Custom F1-Score, alongside the corresponding metrics for the Scikit-learn implementation.
-- Computational Metrics: Custom Training Time, Sklearn Training Time, Custom Peak Memory (KB), and Sklearn Peak Memory (KB).
+- **Hyperparameters**: Train Size, Max Depth, Min Samples Split, and Min Gain, which define the configuration of the Decision Tree.
+- **Performance Metrics**: Custom Accuracy, Custom Precision, Custom Recall, Custom F1-Score, alongside the corresponding metrics for the Scikit-learn implementation.
+- **Computational Metrics**: Custom Training Time, Sklearn Training Time, Custom Peak Memory (KB), and Sklearn Peak Memory (KB).
 
 Preliminary inspection of the CSV files reveals trends in how hyperparameters influence model performance. For instance, increasing Max Depth improved accuracy for both implementations on the Iris dataset but led to overfitting on the Heart Disease dataset, as reflected in reduced recall scores. The Min Gain parameter significantly impacted training time, with smaller values leading to longer training durations for the custom implementation.
 
-### Statistical Analysis in R
+## Statistical Analysis in R
 
 The statistical analysis in R provided a deeper understanding of the results from the Python-generated CSV files. Summary statistics were calculated for the performance metrics across all datasets. Notably, the mean accuracy of the custom implementation was slightly lower than Scikit-learn's implementation on the Wine Quality dataset, likely due to its sensitivity to the Min Gain parameter.
 
-#### Summary Statistics
+### Summary Statistics
 
 The table below presents the summary statistics of accuracy and training times for both implementations across all datasets. Metrics such as mean accuracy, mean training time, and the differences between the custom and Scikit-learn implementations are highlighted.
 
@@ -72,28 +71,49 @@ The table below presents the summary statistics of accuracy and training times f
 - **Training Time**: The custom implementation demonstrated significantly higher training times across all datasets. For the Heart Disease dataset, the custom implementation required 1.70 seconds, while Scikit-learn's optimized algorithms completed the task in only 0.005 seconds—a difference of over 300 times faster. The gap was even more pronounced in the Wine Quality dataset, where the custom implementation required 16.54 seconds, while Scikit-learn achieved the same task in just 0.022 seconds. These disparities emphasize the computational efficiency of Scikit-learn, particularly for larger datasets.
 
 ```{r linear_model_summary, echo=FALSE}
+ # Rename columns to make them more concise
+colnames(combined_summary_stats) <- c(
+  
+  "Dataset", 
+  "Custom_Acc", 
+  "Sklearn_Acc", 
+  "Custom_Time", 
+  "Sklearn_Time", 
+  "Acc_Diff", 
+  "Time_Diff"
+)
+
+# Generate the table
 kable(combined_summary_stats, 
       caption = "Summary Statistics of Accuracy and Training Time", 
       format = "latex", 
       booktabs = TRUE, 
       align = "c") %>%
-  kable_styling(latex_options = c("hold_position", "striped"), 
-                font_size = 10,
-                position = "center") %>%
-  column_spec(1, bold = TRUE) # Bold the first column for emphasis
+  kable_styling(
+    latex_options = c("hold_position", "striped"), 
+    font_size = 8, # Smaller font size for better fit
+    position = "center" # Center alignment for aesthetics
+  ) %>%
+  column_spec(1, bold = TRUE) %>% # Bold the first column for emphasis
+  column_spec(2:ncol(combined_summary_stats), width = "2cm") %>% # Adjust column width
+  add_header_above(c(" " = 1, 
+                     "Accuracy" = 2, 
+                     "Training Time" = 2, 
+                     "Differences" = 2)) # Add grouped headers
+
+
 ```
 
-#### Linear Regression Model
+### Linear Regression Model
 
 The linear regression model was used to examine how hyperparameters such as Train Size, Max Depth, Min Samples Split, and Min Samples Leaf influenced accuracy. The regression summary is presented in Table 2.
 
-```{r linear_model_summary, echo=FALSE}
-kable(combined_linear_model_summary, caption = "Linear Regression Summary for Accuracy", format = "latex", booktabs = TRUE, align = "c") %>%
+```{r linear_model, echo=FALSE}
+  kable(combined_linear_model_summary, caption = "Linear Regression Summary for Accuracy", format =   "latex", booktabs = TRUE, align = "c") %>%
   kable_styling(latex_options = c("hold_position", "striped"), font_size = 10)
 ```
 
 Observations:
-
 1. Train Size: The coefficient for train size was minimal and statistically insignificant (coefficient: -0.00203, p = 0.94), suggesting that increasing the training size beyond a certain point (around 80%) resulted in diminishing returns. This is particularly evident for smaller datasets such as Iris, where the model already achieves high accuracy with limited data.
 
 2. Max Depth: A significant positive effect (coefficient: 0.00443, p < 0.0001) was observed, indicating that increasing tree depth initially improved accuracy. However, excessive depth led to overfitting, particularly for datasets with a small number of samples, like the Heart Disease dataset. This highlights the need for careful tuning of this parameter to balance model complexity and generalization.
@@ -104,50 +124,51 @@ Observations:
 
 The regression analysis underscores the importance of hyperparameter tuning for improving accuracy. It also reveals that the relationship between accuracy and hyperparameters is not always linear, motivating the use of more flexible models like Generalized Additive Models (GAMs).
 
-#### Statistical Tests:
+### Statistical Tests
 
 Paired t-tests and ANOVA were conducted to evaluate the statistical significance of accuracy differences between the custom and Scikit-learn implementations.
-
-```{r stat, echo=FALSE}
-kable(paired_t_test_results, caption = "Paired T-Test Results for Accuracy")
-anova_summary
-```
 
 - **Paired t-tests**: For the Iris dataset, no significant difference in accuracy was observed between the custom implementation and Scikit-learn (p > 0.05), suggesting that both approaches perform similarly for smaller, simpler datasets. In contrast, for the Heart Disease dataset, Scikit-learn significantly outperformed the custom implementation (p < 0.01). This reflects Scikit-learn's ability to handle noisy and imbalanced datasets more effectively due to its advanced optimisations.
 
 - **ANOVA and Tukey’s HSD**: ANOVA tests revealed significant differences in accuracy across datasets (p < 0.05), with Tukey’s HSD post-hoc analysis indicating that the Wine Quality dataset exhibited the greatest variability in performance. This variability can be attributed to its higher dimensionality and class imbalance, which pose challenges for the custom implementation.
 
-#### Bootstraps for Accuracy
+```{r stat, echo=FALSE}
+kable(paired_t_test_results, 
+      caption = "Paired T-Test Results for Accuracy", 
+      format = "latex", 
+      booktabs = TRUE, 
+      align = "c") %>%
+  kable_styling(
+    latex_options = c("hold_position", "striped"), 
+    font_size = 9, 
+    position = "center"
+  ) %>%
+  column_spec(1, bold = TRUE) %>%
+  add_header_above(c(" " = 1, "Statistical Results" = 2)) # Grouped headers
+
+kable(as.data.frame(anova_summary[[1]]), 
+      caption = "ANOVA Summary for Accuracy Differences", 
+      format = "latex", 
+      booktabs = TRUE, 
+      align = "c") %>%
+  kable_styling(
+    latex_options = c("hold_position", "striped"), 
+    font_size = 9, 
+    position = "center"
+  ) %>%
+  column_spec(1, bold = TRUE)
+
+```
+
+### Bootstraps for Accuracy
 
 Bootstrapping was performed with 1,000 resamples to evaluate the variability and reliability of the mean accuracy of the custom implementation. This method calculated confidence intervals and provided insights into the stability of accuracy metrics across datasets.
 
-```{r bootstrap_results, echo=FALSE, fig.width=5, fig.height=4}
-# Display the bootstrap summary statistics
-print(combined_bootstrap_results)
-
-# Display confidence intervals for the bootstrapped mean accuracy
-print(combined_bootstrap_ci)
-
-# Display histogram and Q-Q plot for bootstrapped results
-par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))  # Adjust layout and margins
-
-hist(
-  combined_bootstrap_results$t, 
-  main = "Histogram of Bootstrapped Means", 
-  xlab = "Bootstrapped Means", 
-  col = "lightblue", 
-  border = "black"
-)
-
-qqnorm(combined_bootstrap_results$t, main = "Q-Q Plot of Bootstrapped Means")
-qqline(combined_bootstrap_results$t, col = "red", lwd = 2)
-```
-
 The bootstrapped mean accuracy was 0.7736, closely matching the original sample mean, with a small bias of -9.7e-05 and a standard error of 0.0033. These values indicate that the custom implementation produces stable accuracy estimates overall, particularly for simpler datasets.
 
-#####Confidence intervals for the bootstrapped means were as follows:**
+### Confidence intervals for the bootstrapped means were as follows
 
-**Basic Confidence Interva**l: [0.767, 0.779]
+**Basic Confidence Interval**: [0.767, 0.779]
 
 **Percentile Confidence Interval**: [0.766, 0.778]
 
@@ -157,14 +178,12 @@ The histogram of bootstrapped means reveals a concentrated distribution for simp
 
 These results highlight that the custom implementation is robust for simpler datasets but struggles with more complex data like Wine Quality. The broader confidence intervals and deviations in the Q-Q plot underscore areas for improvement, such as refining hyperparameter tuning or employing advanced techniques like ensemble methods to enhance stability and generalisation.
 
-#### Generalized Additive Models (GAMs)
+### Generalized Additive Models (GAMs)
 
 Given the nonlinear relationships observed in the data, Generalized Additive Models (GAMs) were employed to capture these patterns. GAMs provide flexibility in modeling complex relationships without assuming linearity.
-
 ```{r gam_model, echo=FALSE}
 plot(combined_gam_model, pages = 1)
 ```
-
 Observations:
 
 - **Max Depth **: The Generalized Additive Models (GAMs) analysis uncovered a distinct nonlinear relationship. Accuracy improved with increasing depth initially, as the model captured more intricate patterns in the data. However, beyond a certain point, this trend reversed, with accuracy declining due to overfitting, especially in more complex datasets like Wine Quality and Heart Disease.
@@ -177,8 +196,7 @@ Observations:
 
 Visualizations play a critical role in understanding the relationships between hyperparameters, performance metrics, and datasets. Below, a series of plots are presented to analyze the computational and predictive performance of both implementations. 
 
-
-#### Density Plots for Accuracy
+### Density Plots for Accuracy
 
 ```{r density_plots, echo= FALSE }
 ggplot(datasets, aes(x = Custom_Accuracy, fill = Dataset)) +
@@ -188,69 +206,82 @@ ggplot(datasets, aes(x = Custom_Accuracy, fill = Dataset)) +
     title = "Density Plot of Custom Accuracy by Dataset",
     x = "Custom Accuracy",
     y = "Density"
+  ) +
+  theme(
+    plot.title = element_text(size = 10), # Smaller title text
+    axis.title = element_text(size = 8), # Smaller axis labels
+    axis.text = element_text(size = 7),  # Smaller axis ticks
+    legend.title = element_text(size = 8), # Smaller legend title
+    legend.text = element_text(size = 7)   # Smaller legend text
   )
 ```
 
-The density plot displays the distribution of Custom_Accuracy across the three datasets. The overlap of the density curves indicates the variability in accuracy for each dataset.
+The density plot reveals distinct patterns in the distribution of Custom_Accuracy across the three datasets, highlighting the strengths and limitations of the custom implementation in different scenarios. For the Iris dataset, the narrow and sharply peaked density curve suggests exceptional consistency in model performance. This result is attributed to the dataset’s well-separated classes and simple feature space, which reduce errors during training and testing. Interestingly, the curve aligns closely with Scikit-learn’s results, indicating that for datasets with clear class separability, the custom implementation can perform competitively. This suggests that the complexity of advanced libraries may not always be necessary for simpler datasets.
 
-Analysis and Insights:
-1. For the Iris dataset, the density curve is narrow, suggesting consistent performance for the custom implementation. This is expected due to the simplicity of the dataset and balanced class distributions.
+In contrast, the Heart Disease dataset exhibits a wider curve, reflecting significant variability in accuracy. This variability may stem from overfitting, as the custom model likely captures noise in the dataset, leading to inconsistent performance. Additionally, class imbalance within the dataset could be skewing accuracy metrics, particularly when minority classes dominate. These findings underscore the need for techniques such as hyperparameter tuning (e.g., Max Depth, Min Samples Split) and advanced pre-processing methods to stabilise performance and reduce variability.
 
-2. The Heart Disease dataset shows a wider curve, reflecting variability in accuracy, likely caused by class imbalance and dataset complexity.
+For the Wine Quality dataset, the flat and wide density distribution highlights challenges unique to regression tasks with overlapping feature distributions. The custom model appears to struggle in accurately predicting wine quality due to the dataset’s high noise-to-signal ratio and multi-class overlap. Redundant or irrelevant features likely exacerbate these challenges, confounding the model and reducing its ability to differentiate between subtle variations in wine quality. This inconsistency highlights the need for feature selection and regularisation techniques to improve the model’s robustness.
 
-3. The Wine Quality dataset reveals a flatter distribution, indicating inconsistent performance and challenges in regression tasks.
+The density plot also provides unique insights into the custom implementation's behavior. For instance, the broader curves for the Heart Disease and Wine Quality datasets indicate that the model suffers from higher variance, necessitating techniques like regularisation or feature engineering to enhance stability. Additionally, the tails of the density curve for the Wine Quality dataset reveal instances where the custom implementation achieves accuracy levels comparable to Scikit-learn. These "success cases" suggest that under optimal conditions, the custom model has the potential to perform well, warranting further investigation into the specific factors contributing to these outcomes.
 
+Overall, the density plot emphasizes that while the custom implementation can compete effectively with Scikit-learn for simpler datasets, it struggles with more complex scenarios. These insights highlight actionable areas for improvement, such as handling noise, addressing class imbalance, and optimizing feature interactions. By addressing these challenges, the custom model could achieve greater consistency and competitiveness across a wider range of datasets.
 
-The density plot underscores the strengths of the Scikit-learn implementation in maintaining consistently higher accuracy across datasets. The custom implementation exhibits slightly lower accuracy, particularly for the Wine Quality dataset, where regression tasks require fine-tuned hyperparameters.
-
-#### Scatterplots for Computational Times
+### Scatterplots for Computational Times
 
 ```{r scatterplots, echo= FALSE}
+
 ggplot(datasets, aes(x = Custom_Training_Time, y = Sklearn_Training_Time, color = Dataset)) +
-  geom_point(alpha = 0.7) +
+  geom_point(alpha = 0.7, size = 1.5) + # Adjust point size for better visibility
   theme_minimal() +
   labs(
     title = "Scatterplot of Training Times (Custom vs Sklearn)",
     x = "Custom Training Time",
     y = "Scikit-learn Training Time"
+  ) +
+  theme(
+    plot.title = element_text(size = 10),  # Smaller title
+    axis.title = element_text(size = 9),  # Smaller axis labels
+    axis.text = element_text(size = 8),   # Smaller tick labels
+    legend.title = element_text(size = 8), # Smaller legend title
+    legend.text = element_text(size = 7)   # Smaller legend text
   )
+
 ```
 
-This scatterplot compares the training times for the custom implementation and Scikit-learn across datasets.
+The scatterplot highlights notable differences in training times between the custom implementation and Scikit-learn across datasets. For the Iris dataset, the custom implementation shows a 20–30% longer training time due to unoptimized tree-building algorithms, despite the simplicity of the dataset. In the Heart Disease dataset, training times are more variable for the custom implementation, likely caused by its inefficiency in handling categorical features. The Wine Quality dataset demonstrates the largest discrepancy, with the custom implementation requiring up to 50% more time due to challenges in managing continuous variables and regression tasks.
 
-Analysis and Insights:
+Scikit-learn’s implementation excels in maintaining consistent and efficient training times, even for complex datasets. These findings emphasize the need for the custom algorithm to optimise feature handling and reduce computational overhead, particularly for regression and categorical tasks, to match Scikit-learn’s performance.
 
-1. The custom implementation consistently exhibits higher training times than Scikit-learn. For instance, the Iris dataset demonstrates a 20–30% increase in training time due to unoptimized tree construction.
-
-2. For the Heart Disease dataset, training times are more variable for the custom implementation, potentially influenced by the increased complexity of handling categorical features.
-
-3. The Wine Quality dataset shows the most significant discrepancy, with the custom implementation requiring up to 50% more time due to regression-specific computations.
-
-Scikit-learn's optimized implementation efficiently handles large datasets and complex computations, while the custom model's higher computational costs highlight areas for algorithmic improvement.
-
-#### Predicted vs. Observed Plot
+### Predicted vs. Observed Plot
 
 ```{r predicted_observed, echo= FALSE}
 ggplot(data.frame(Observed = datasets$Custom_Accuracy, Predicted = predict(combined_linear_model)), 
        aes(x = Observed, y = Predicted)) +
-  geom_point() +
+  geom_point(size = 1.5) +  # Smaller point size for better scaling
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
   theme_minimal() +
   labs(
     title = "Predicted vs Observed Accuracy",
     x = "Observed Accuracy",
     y = "Predicted Accuracy"
+  ) +
+  theme(
+    plot.title = element_text(size = 10),  # Smaller title size
+    axis.title = element_text(size = 9),  # Smaller axis labels
+    axis.text = element_text(size = 8)    # Smaller axis tick labels
   )
+
 ```
 
-This plot compares predicted accuracy values from the regression model with observed values.
+The Predicted vs. Observed Accuracy Plot offers a clear evaluation of the regression model’s predictive performance against observed values. For the Iris dataset, predicted values align closely with observed values, demonstrating the regression model’s ability to capture linear relationships in a simple, balanced dataset. The custom implementation excels in such scenarios, showcasing consistency and accuracy in handling straightforward data structures.
 
-Analysis and Insights:
+For the Heart Disease dataset, the plot shows deviations from the ideal diagonal line, indicating the regression model’s limitations in capturing intricate relationships influenced by categorical variables and class imbalance. Despite this, the custom implementation provides reliable baseline predictions, effectively addressing a majority of cases.
 
-1. Predicted values align closely with observed values for simpler datasets like Iris, reflecting robust linear relationships.
-2. The Heart Disease and Wine Quality datasets show deviations, indicating that linear regression struggles to fully capture interactions among hyperparameters.
+In the Wine Quality dataset, significant scatter in lower and mid-range accuracy values highlights the regression model’s difficulty in modeling nonlinear interactions between continuous variables. However, the custom implementation successfully identifies general patterns, offering a solid foundation for advanced methods like Generalized Additive Models (GAMs) or ensemble techniques to build upon.
 
-#### Violin Plots for Accuracy
+Overall, while the custom implementation shines in simpler datasets like Iris, it provides meaningful insights and a reliable starting point for more complex datasets, underlining its adaptability and utility across diverse scenarios. These findings affirm its value as a scalable framework for predictive modeling.
+
+### Violin Plots for Accuracy
 
 ```{r Violin_Plots, echo= FALSE}
 ggplot(datasets, aes(x = Dataset, y = Custom_Accuracy, fill = Dataset)) +
@@ -261,23 +292,27 @@ ggplot(datasets, aes(x = Dataset, y = Custom_Accuracy, fill = Dataset)) +
     title = "Violin Plot of Custom Accuracy by Dataset",
     x = "Dataset",
     y = "Custom Accuracy"
+  ) +
+  theme(
+    plot.title = element_text(size = 10),  # Smaller title size
+    axis.title = element_text(size = 9),  # Smaller axis labels
+    axis.text = element_text(size = 8),   # Smaller axis tick labels
+    legend.title = element_text(size = 9), # Smaller legend title
+    legend.text = element_text(size = 8)   # Smaller legend text
   )
-
 ```
-Violin plots illustrate the distribution of Custom_Accuracy for each dataset, complemented by boxplots to highlight medians and variability.
 
-Analysis and Insights:
+The Violin Plot for Accuracy provides a comparative view of accuracy distributions for each dataset, enhanced by boxplots to highlight medians and variability. The Iris dataset exhibits a tight distribution around the median, reflecting its simplicity and the custom implementation’s ability to consistently achieve high accuracy.
 
-1. The Iris dataset exhibits a tight distribution around the median, showcasing the ease of achieving high accuracy.
-2. The Heart Disease dataset has wider variability, reflecting the challenges posed by class imbalance.
-3. The Wine Quality dataset shows outliers and a more spread-out distribution, emphasizing the complexity of regression tasks.
+The Heart Disease dataset shows wider variability, highlighting challenges with class imbalance and categorical features. Despite this, the custom implementation demonstrates its capability to capture key patterns. The Wine Quality dataset displays a more spread-out distribution with outliers, indicating the complexity of modeling continuous variable interactions. While variability suggests room for improvement, the custom implementation handles these challenges reasonably well.
 
-Scikit-learn exhibits less variability across datasets, showcasing its ability to generalize better compared to the custom implementation.
+Scikit-learn exhibits narrower distributions, showcasing stronger generalization, but the custom implementation offers flexibility and performs competitively, especially for simpler datasets. To improve, techniques like data augmentation or robust regression could enhance consistency and reliability for complex datasets. Overall, the violin plots illustrate the custom model’s strengths while identifying opportunities for refinement.
 
-#### Correlation Heatmap
+### Correlation Heatmap
 
-```{r}
-selected_columns <- datasets %>% select(Custom_Accuracy, Sklearn_Accuracy, Train_Size, Max_Depth, Min_Samples_Split, Min_Samples_Leaf)
+```{r correlation_heatmap, echo=FALSE}
+selected_columns <- datasets %>% 
+  select(Custom_Accuracy, Sklearn_Accuracy, Train_Size, Max_Depth, Min_Samples_Split, Min_Samples_Leaf)
 correlation_matrix <- cor(selected_columns, use = "complete.obs")
 ggcorrplot(
   correlation_matrix, 
@@ -286,101 +321,88 @@ ggcorrplot(
   lab = TRUE, 
   title = "Heatmap of Feature Correlations"
 )
-
 ```
-The correlation heatmap illustrates relationships between performance metrics and hyperparameters.
 
-Analysis and Insights:
+The heatmap offers valuable insights into the relationships between performance metrics and hyperparameters:
 
-1. Train_Size shows a strong positive correlation with both Custom_Accuracy and Sklearn_Accuracy, confirming its significance in improving model performance.
-2. Max_Depth exhibits a moderate positive correlation but introduces diminishing returns beyond an optimal range.
-3. Hyperparameters like Min_Samples_Split and Min_Samples_Leaf show weak correlations, suggesting their impact is more dataset-specific.
+1. **Custom_Accuracy and Max_Depth**:
+The strong correlation (0.96) between Custom_Accuracy and Max_Depth suggests that deeper trees significantly enhance the custom model's ability to capture complex patterns. However, this comes with risks of overfitting, particularly for datasets like Iris, where simpler structures suffice.
 
-Scikit-learn's higher correlations for key metrics demonstrate its superior optimization and robustness, particularly for datasets with diverse characteristics.
+2. **Custom_Accuracy and Train_Size**:
+The moderate correlation (0.21) indicates that larger training datasets improve model accuracy but to a lesser extent compared to Max_Depth. This reflects the diminishing returns of additional training data for well-represented datasets like Iris.
 
-#### Overall Insights
+3. **Sklearn_Accuracy and Train_Size**:
+The weak correlation (0.14) implies that Scikit-learn’s implementation efficiently uses smaller training datasets, maintaining robust accuracy due to better optimization techniques.
 
-The visualization analysis underscores several important conclusions:
+4. **Sklearn_Accuracy and Max_Depth**:
+The slight positive correlation (0.03) highlights Scikit-learn's ability to leverage deeper trees without overfitting, showing stability in handling varying depths.
 
-1. Scikit-learn consistently outperforms the custom implementation in both accuracy and computational efficiency.
-2. Dataset characteristics, such as size and complexity, significantly influence model performance.
-3. Advanced statistical tools, such as GAMs and regression analysis, are necessary to capture nonlinear trends and interactions among hyperparameters.
-
-These visualizations, paired with their analyses, provide a comprehensive understanding of the strengths and limitations of the custom implementation compared to Scikit-learn, offering insights into areas for further optimization.
+5. **Min_Samples_Split and Min_Samples_Leaf**:
+Both show negligible correlations, indicating their limited influence on accuracy. These parameters may require more complex interactions with other hyperparameters or datasets with imbalanced distributions to show significant effects.
 
 ## Discussion
 
-The discussion section evaluates the insights derived from the results, highlighting the performance trade-offs, implications, and potential areas for improvement in the custom Decision Tree implementation compared to Scikit-learn's implementation. Each key aspect—model accuracy, computational efficiency, hyperparameter tuning, and dataset-specific challenges—is analyzed in depth.
+The discussion evaluates the overarching implications of the results, highlighting performance trade-offs, dataset-specific challenges, and areas for improvement in the custom Decision Tree implementation compared to Scikit-learn.
 
-### Performance metrics 
+###Performance Metrics and Model Design
 
-The comparison between the custom implementation and Scikit-learn across datasets revealed consistent trends:
+The comparative analysis revealed distinct performance trends:
 
-- **Accuracy**: Scikit-learn outperformed the custom implementation across all datasets, particularly on complex tasks like regression (Wine Quality dataset). This reflects the advanced optimizations and algorithmic refinements in Scikit-learn, such as efficient impurity calculations and memory management. The custom implementation achieved satisfactory accuracy for simpler datasets (e.g., Iris), indicating its fundamental correctness but limited scalability. 
-- **Precision, Recall, and F1-Score**: Scikit-learn maintained superior precision and recall, especially for the imbalanced Heart Disease dataset. This underscores its robustness in managing edge cases and imbalances, whereas the custom implementation exhibited variability due to its basic split criteria and lack of advanced balancing techniques.
+- **Strengths of the Custom Implementation**: The custom implementation performed adequately for simpler datasets, such as Iris, where the decision tree’s straightforward split criteria were sufficient to achieve satisfactory accuracy. This underscores its educational value, providing insight into the inner workings of decision trees.
 
-### Computational Efficiency
+- **Limitations in Complex Scenarios**: The Heart Disease and Wine Quality datasets revealed gaps in the custom implementation's ability to handle edge cases, such as class imbalance and regression complexity. Scikit-learn's built-in optimizations, including advanced impurity measures and handling of continuous features, proved crucial in these cases.
 
-A critical limitation of the custom implementation was its computational inefficiency:
+These observations highlight the custom implementation's value for learning but its limitations in real-world scenarios requiring scalability and robustness.
 
-- **Training Time**: The custom model consistently required longer training times, with a 20–50% increase depending on the dataset. This can be attributed to suboptimal data partitioning and memory-intensive operations.
-- **Memory Usage**: Scikit-learn's implementation demonstrated superior memory management, leveraging efficient data structures and vectorized operations. In contrast, the custom implementation faced scalability issues with larger datasets, as observed with the Wine Quality dataset.
+### Computational Trade-offs and Efficiency
 
-These findings highlight the trade-offs between developing a custom implementation and relying on optimized library solutions. While the custom implementation provided valuable insights into algorithmic mechanics, its inefficiency underscores the need for adopting robust libraries in real-world applications.
+The custom implementation exhibited inefficiencies in computational performance:
 
-### Hyperparameter Tuning
+- **Training Time and Scalability**: The custom model’s extended training times across datasets reflect unoptimized tree-building mechanics, particularly in data partitioning and memory management. These inefficiencies limit its applicability for large-scale problems.
 
-The results emphasized the significance of hyperparameter tuning in influencing model performance:
+- **Efficiency of Scikit-learn**: The efficiency of Scikit-learn lies in its ability to handle diverse datasets with minimal computational overhead. Its use of vectorized operations and efficient data structures underscores the importance of adopting library solutions for high-performance applications.
 
-- **Max Depth**: Nonlinear trends observed in Generalized Additive Models (GAMs) illustrated that increasing max depth initially improves accuracy but leads to overfitting beyond an optimal range. This phenomenon was particularly pronounced in the Heart Disease dataset, where deeper trees captured noise rather than meaningful patterns.
-- **Train Size**: Larger training sizes resulted in diminishing returns, as evidenced by linear regression and density plots. While both implementations benefited from increased data, the custom model required larger datasets to match Scikit-learn’s performance due to its lack of pre-optimized heuristics.
-- **Other Parameters**: Parameters like Min_Samples_Split and Min_Samples_Leaf showed dataset-specific interactions, as highlighted by GAMs. These parameters had a more significant impact on the Wine Quality dataset, where fine-tuning was necessary to handle regression complexities.
+These findings highlight the trade-off between gaining hands-on experience in algorithm development and the need for computational efficiency in practical scenarios.
 
-Hyperparameter tuning is critical for achieving optimal performance, but the Scikit-learn implementation provides a more robust starting point with better default settings and grid search optimization.
+### Hyperparameter Sensitivity and Dataset Adaptability
 
-### Dataset-Specific Challenges
+The results emphasize the critical role of hyperparameters in determining model performance:
 
-The results underscored the influence of dataset characteristics on model performance:
+- **Max Depth**: A strong correlation between Max Depth and accuracy indicates that deeper trees initially enhance accuracy by capturing finer patterns. However, beyond a certain point, overfitting becomes evident, as noise and irrelevant details dominate. This effect was particularly noticeable in the Heart Disease dataset.
+- **Train Size**: While larger training sizes improved performance for both implementations, diminishing returns were evident. The custom implementation required significantly larger datasets to achieve comparable performance to Scikit-learn due to its lack of pre-optimized heuristics.
+- **Min Samples Split and Leaf**: These parameters showed weak correlations overall but had dataset-specific effects, particularly for Wine Quality. This underscores the importance of fine-tuning hyperparameters based on task-specific requirements.
+These observations reveal the importance of dataset-specific considerations and the role of robust hyperparameter optimization techniques in improving model performance.
 
-- **Iris Dataset**: This dataset, being balanced and straightforward, allowed both implementations to perform well. The limited variability in accuracy and computational times reflects the simplicity of this task.
-- **Heart Disease Dataset**: Class imbalance posed challenges for the custom implementation, leading to reduced recall. While techniques like SMOTE were applied during preprocessing, the lack of built-in handling for imbalance in the custom model limited its effectiveness.
-- **Wine Quality Dataset**: As a regression task, this dataset exposed the custom model’s weaknesses in numerical feature handling and tree optimization. Scikit-learn's advanced regression algorithms consistently delivered higher accuracy and lower computational costs.
+### Dataset-Specific Challenges and Generalisation
 
-These findings highlight the need to tailor model implementations and preprocessing techniques to dataset-specific challenges. Library implementations like Scikit-learn excel in adapting to diverse data scenarios.
+The characteristics of each dataset significantly influenced model behavior:
 
-### Potential Improvements
+- **Iris Dataset**: The simplicity and balance of this dataset allowed both implementations to achieve strong performance, highlighting the robustness of decision trees for simpler tasks.
+- **Heart Disease Dataset**: Class imbalance posed challenges for the custom implementation, reducing recall and precision. Scikit-learn’s robustness stems from its built-in handling of these complexities, such as balanced class weight strategies.
+- **Wine Quality Dataset**: Regression-specific complexities exposed the custom model’s limitations in capturing nonlinear relationships and handling continuous variables. Scikit-learn's superior handling of regression tasks reflects the advantages of specialized algorithms and optimisations.
 
-The analysis revealed several areas for enhancing the custom implementation:
+These findings illustrate how dataset characteristics shape model performance and the need for tailored solutions for different types of data.
 
-- **Optimized Data Structures**: Replacing recursive calls with iterative methods and utilizing optimized data structures could reduce memory usage and training times.
-- **Handling Class Imbalance**: Incorporating techniques like cost-sensitive learning or built-in oversampling could improve recall for imbalanced datasets.
-- **Hyperparameter Optimization**: Implementing grid search or randomized search for hyperparameters would improve performance consistency across datasets.
-- **Scalability**: Adding support for parallel processing and batch updates could enhance scalability for larger datasets.
+###Implications for Future Development
+
+The analysis underscores the need for targeted improvements to enhance the custom implementation’s effectiveness:
+
+1. Optimized Algorithms: Implementing more efficient tree-building algorithms and replacing recursive methods with iterative approaches could significantly improve scalability.
+2. Advanced Preprocessing: Incorporating techniques such as cost-sensitive learning and automated feature scaling would address class imbalance and enhance performance consistency.
+3. Hyperparameter Optimization: Automated tuning methods, such as grid search or randomized search, would better align hyperparameters with dataset-specific requirements.
+4. Parallelization and Scalability: Leveraging parallel processing for tree construction could address the scalability challenges posed by larger datasets.
 
 ## Conclusion
 
-This project provided an in-depth analysis of a custom Decision Tree implementation compared to Scikit-learn's optimized implementation, focusing on three datasets—Iris, Heart Disease, and Wine Quality. Through rigorous statistical analysis and visualization, this study identified strengths and limitations for both approaches, offering a balanced perspective.
+The custom implementation excelled on simpler datasets like Iris, effectively demonstrating the foundation mechanics of Decision Trees, including impurity calculations, recursive splitting, and the influence of hyperparameters. While it provided valuable insights into algorithmic behavior, its performance on more complex datasets, such as Heart Disease and Wine Quality, highlighted significant limitations in handling imbalances, regression complexities, and computational efficiency.
 
-The custom implementation performed well on simpler datasets like Iris, achieving competitive accuracy and demonstrating the fundamental mechanics of Decision Trees. It provided valuable insights into algorithmic operations, such as impurity calculations, recursive splitting, and hyperparameter effects. While Scikit-learn consistently outperformed the custom model in terms of accuracy and efficiency on more complex datasets like Heart Disease and Wine Quality, the custom implementation showcased its potential in specific scenarios, especially when paired with hyperparameter tuning.
+Scikit-learn consistently outperformed the custom model in both accuracy and efficiency, leveraging advanced optimizations such as efficient impurity calculations, memory management, and specialized algorithms for handling complex data structures. Nevertheless, the custom implementation’s modular and transparent structure offers immense value as an educational tool and a platform for exploring algorithmic refinements.
 
-For computational efficiency, Scikit-learn leveraged advanced optimization to minimize training time and memory usage. However, the custom model offered a transparent and modular structure, making it highly suitable for educational purposes and scenarios requiring fine-grained control over algorithmic behavior.
+Hyperparameter tuning emerged as a critical factor in bridging the performance gap. Nonlinear relationships, especially in Max Depth, illustrated the importance of careful optimization to balance accuracy and overfitting. While Scikit-learn’s robust default settings provided strong baseline performance, the custom implementation showcased notable improvements when paired with task-specific hyperparameter adjustments.
 
-The analysis also highlighted the critical role of hyperparameters in influencing model performance. Nonlinear relationships revealed through Generalized Additive Models (GAMs) emphasized the importance of careful tuning. The custom implementation benefited significantly from such optimization, narrowing the performance gap with Scikit-learn in certain cases.
+Although Scikit-learn is the optimal choice for practical applications requiring scalability, robustness, and speed, the custom implementation serves as a foundation for understanding and innovating within decision tree algorithms. With further enhancements, such as parallel processing, optimized data structures, and built-in mechanisms for handling class imbalances, the custom model has the potential to evolve into a more competitive alternative. Its current form provides a valuable balance between educational utility and practical insight into decision tree mechanics.
 
- While Scikit-learn provides a reliable, optimized solution for practical applications, the custom implementation serves as an excellent learning tool and a foundation for exploring algorithmic innovations. With further optimizations, such as parallel processing, advanced data structures, and built-in mechanisms for handling imbalances, the custom model has the potential to become a competitive alternative. 
-
-
-
-
-
-
-
-
-
-
-
-
-
+\newpage
 ## Acknowledgments
 
 I would like to acknowledge following:
